@@ -9,8 +9,8 @@
 import Foundation
 
 struct Search: Codable {
-    var totalCount: Int
-    var items: [Issue]
+    var totalCount: Int = 0
+    var items: [Issue] = []
     
     enum CodingKeys: String, CodingKey {
         case totalCount = "total_count"
