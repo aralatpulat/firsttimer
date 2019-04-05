@@ -11,19 +11,25 @@ import Alamofire
 
 class ApiEngine {
     
+    typealias errorHandler = (Error) -> Void
+    
     func get<T: Decodable>(from url: URL,
                            type: T.Type,
-                           completion: @escaping (T) -> Void ){
+                           successHandler: @escaping (T) -> Void,
+                           errorHandler: @escaping errorHandler) {
         Alamofire.request(url).responseData { response in
             switch response.result {
             case .success(let value):
                 do{
                     let resObj = try JSONDecoder().decode(T.self, from: value)
-                    completion(resObj)
+                    successHandler(resObj)
+                    return
                 } catch{
+                    errorHandler(ApiError.invalidDecode)
                     return
                 }
             case .failure( _):
+                errorHandler(ApiError.invalidRequest)
                 return
             }
         }
