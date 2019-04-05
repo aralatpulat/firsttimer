@@ -17,10 +17,20 @@ class ApiClient {
     }
     
     func getLanguages() {
-        let url = UrlBuilder.languages()
-        apiEngine.get(from: url!, type: Languages.self) { value in
-            print(value)
+        guard let url = UrlBuilder.languages() else {
+            print(ApiError.invalidURL)
+            return
         }
+        apiEngine.get(
+            from: url,
+            type: Languages.self,
+            successHandler: { value in
+                print(value)
+            },
+            errorHandler: { error in
+                print(error)
+            }
+        )
     }
     
     func getIssues(completion: @escaping (Search) -> ()) {
@@ -28,10 +38,20 @@ class ApiClient {
             URLQueryItem(name: "q", value: "+language:swift+type:issue+is:open"),
             URLQueryItem(name: "page", value: "1")
         ]
-        let url = UrlBuilder.issues(queryItems: items)
-        apiEngine.get(from: url!, type: Search.self) { value in
-            print(value)
-            completion(value)
+        guard let url = UrlBuilder.issues(queryItems: items) else {
+            print(ApiError.invalidURL)
+            return
         }
+        apiEngine.get(
+            from: url,
+            type: Search.self,
+            successHandler: { value in
+                print(value)
+                completion(value)
+            },
+            errorHandler: { error in
+                print(error)
+            } 
+        )
     }
 }
