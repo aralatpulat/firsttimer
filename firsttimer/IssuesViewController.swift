@@ -30,7 +30,7 @@ class IssuesViewController: UIViewController {
     }
     
     private func setupTableView(){
-        issuesTableView.register(UITableViewCell.self, forCellReuseIdentifier: "cellId")
+        issuesTableView.register(UINib(nibName: "IssueCell", bundle: nil), forCellReuseIdentifier: "cellId")
         issuesTableView.delegate = self
         issuesTableView.dataSource = self
         
@@ -46,8 +46,8 @@ extension IssuesViewController: UITableViewDelegate, UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "cellId", for: indexPath)
-        cell.textLabel?.text = "\(issues.items[indexPath.row].title)"
+        let cell = tableView.dequeueReusableCell(withIdentifier: "cellId", for: indexPath) as! IssueCell
+        cell.setup(issue: issues.items[indexPath.row])
         return cell
     }
 }
