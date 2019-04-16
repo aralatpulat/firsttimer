@@ -9,27 +9,21 @@
 import UIKit
 import SafariServices
 
-class IssuesViewController: UIViewController {
+public enum SearchState {
+    case updated
+}
 
-    @IBOutlet weak var issuesTableView: UITableView!
+class IssuesViewController: UIViewController {
     
-    var issues: Search = Search()
-    var pageCount: Int = 1
-    let apiClient = ApiClient()
+    @IBOutlet weak var issuesTableView: UITableView!
+
+    let searchVM = SearchViewModal()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setupTableView()
-        reloadData()
-    }
-    
-    @objc private func reloadData(){
-        let page: String = "\(pageCount)"
-        apiClient.getIssues(page: page) { [weak self] (data) in
-            self?.issues = data
-            self?.issuesTableView.reloadData()
-            self?.issuesTableView.refreshControl?.endRefreshing()
-        }
+        loadData()
+        bindViewModal()
     }
     
     private func setupTableView(){
@@ -38,17 +32,25 @@ class IssuesViewController: UIViewController {
         issuesTableView.dataSource = self
         
         let refreshCtrl = UIRefreshControl()
-        refreshCtrl.addTarget(self, action: #selector(reloadData), for: .valueChanged)
+        refreshCtrl.addTarget(self, action: #selector(loadData), for: .valueChanged)
         issuesTableView.refreshControl = refreshCtrl
     }
     
-    private func loadMoreIfNeeded(currentIndex: Int){
-        if currentIndex == issues.items.count - 1 {
-            pageCount += 1
-            apiClient.getIssues(page: "\(pageCount)") { [weak self] (data) in
-                self?.issues.items.append(contentsOf: data.items)
-                self?.issuesTableView.reloadData()
-                self?.issuesTableView.refreshControl?.endRefreshing()
+    @objc private func loadData(){
+        searchVM.getIssues()
+    }
+    
+    private func reloadTableData(){
+        self.issuesTableView.reloadData()
+        self.issuesTableView.refreshControl?.endRefreshing()
+    }
+    
+    
+    private func bindViewModal(){
+        searchVM.state = { [weak self] state in
+            switch state {
+            case .updated:
+                self?.reloadTableData()
             }
         }
     }
@@ -56,24 +58,23 @@ class IssuesViewController: UIViewController {
 
 extension IssuesViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return self.issues.items.count
+        return searchVM.issues.items.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        loadMoreIfNeeded(currentIndex: indexPath.row)
+        searchVM.loadMoreIfNeeded(currentIndex: indexPath.row)
         let cell = tableView.dequeueReusableCell(withIdentifier: "cellId", for: indexPath) as! IssueCell
-        cell.setup(issue: issues.items[indexPath.row])
+        cell.setup(issue: searchVM.issues.items[indexPath.row])
         return cell
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let repoHtmlUrl = URL(string: issues.items[indexPath.row].htmlUrl)
+        let repoHtmlUrl = URL(string: searchVM.issues.items[indexPath.row].htmlUrl)
         
         if let url = repoHtmlUrl {
             let safariViewController = SFSafariViewController(url: url)
             present(safariViewController, animated: true, completion: nil)
         }
-       
     }
 }
 
