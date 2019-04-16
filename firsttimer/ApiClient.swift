@@ -33,10 +33,10 @@ class ApiClient {
         )
     }
     
-    func getIssues(completion: @escaping (Search) -> ()) {
+    func getIssues(page: String, completion: @escaping (Search) -> ()) {
         let items = [
             URLQueryItem(name: "q", value: "+language:swift+type:issue+is:open"),
-            URLQueryItem(name: "page", value: "1")
+            URLQueryItem(name: "page", value: page)
         ]
         guard let url = UrlBuilder.issues(queryItems: items) else {
             print(ApiError.invalidURL)
