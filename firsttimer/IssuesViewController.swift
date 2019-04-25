@@ -10,18 +10,22 @@ import UIKit
 import SafariServices
 
 public enum SearchState {
-    case updated
+    case searched
+    case fetching
+    case fetched
 }
 
 class IssuesViewController: UIViewController {
     
     @IBOutlet weak var issuesTableView: UITableView!
-
+    
+    var searchController: UISearchController = UISearchController(searchResultsController: nil)
     let searchVM = SearchViewModal()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setupTableView()
+        setupSearchCont()
         loadData()
         bindViewModal()
     }
@@ -30,10 +34,20 @@ class IssuesViewController: UIViewController {
         issuesTableView.register(UINib(nibName: "IssueCell", bundle: nil), forCellReuseIdentifier: "cellId")
         issuesTableView.delegate = self
         issuesTableView.dataSource = self
-        
-        let refreshCtrl = UIRefreshControl()
-        refreshCtrl.addTarget(self, action: #selector(loadData), for: .valueChanged)
-        issuesTableView.refreshControl = refreshCtrl
+    }
+    
+    private func setupSearchCont(){
+        searchController.searchBar.delegate = self
+        searchController.obscuresBackgroundDuringPresentation = false
+        searchController.searchBar.placeholder = "Search Issue"
+        searchController.searchBar.enablesReturnKeyAutomatically = false
+        searchController.hidesNavigationBarDuringPresentation = true
+        if #available(iOS 11.0, *) {
+            navigationItem.searchController = searchController
+            navigationItem.hidesSearchBarWhenScrolling = false
+        } else {
+            self.issuesTableView.tableHeaderView = searchController.searchBar
+        }
     }
     
     @objc private func loadData(){
@@ -42,14 +56,22 @@ class IssuesViewController: UIViewController {
     
     private func reloadTableData(){
         self.issuesTableView.reloadData()
-        self.issuesTableView.refreshControl?.endRefreshing()
     }
     
     
     private func bindViewModal(){
-        searchVM.state = { [weak self] state in
+        searchVM.stateHandler = { [weak self] state in
             switch state {
-            case .updated:
+            case .searched:
+                self?.removeLoading()
+                self?.reloadTableData()
+                if self?.issuesTableView.numberOfRows(inSection: 0) != 0 {
+                    self?.issuesTableView.scrollToRow(at: IndexPath(row: 0, section: 0), at: .top, animated: true)
+                }
+            case .fetching:
+                self?.setLoading()
+            case .fetched:
+                self?.removeLoading()
                 self?.reloadTableData()
             }
         }
@@ -77,4 +99,20 @@ extension IssuesViewController: UITableViewDelegate, UITableViewDataSource {
         }
     }
 }
+
+extension IssuesViewController: UISearchControllerDelegate, UISearchBarDelegate {
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        guard let searchedText = searchBar.text else { return }
+        searchVM.searchedText = searchedText
+        searchVM.pageCount = 1
+        searchVM.getIssues()
+    }
+    
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        searchVM.searchedText = ""
+    }
+}
+
+
 
