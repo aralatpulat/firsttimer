@@ -25,7 +25,6 @@ class ApiClient {
             from: url,
             type: Languages.self,
             successHandler: { value in
-                print(value)
             },
             errorHandler: { error in
                 print(error)
@@ -33,9 +32,10 @@ class ApiClient {
         )
     }
     
-    func getIssues(page: String, completion: @escaping (Search) -> ()) {
+    func getIssues(page: String, search: String, completion: @escaping (Search) -> ()) {
+        let params = "\(search)+in:title+language:swift+type:issue+is:open+sort:created-desc"
         let items = [
-            URLQueryItem(name: "q", value: "+language:swift+type:issue+is:open"),
+            URLQueryItem(name: "q", value: params),
             URLQueryItem(name: "page", value: page)
         ]
         guard let url = UrlBuilder.issues(queryItems: items) else {
@@ -46,7 +46,6 @@ class ApiClient {
             from: url,
             type: Search.self,
             successHandler: { value in
-                print(value)
                 completion(value)
             },
             errorHandler: { error in
